@@ -25,8 +25,20 @@ sudo mkswap /swapfile
 # Enable the swap file
 sudo swapon /swapfile
 
-# Make the swap file permanent by adding it to /etc/fstab
-echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+# Define the swapfile path
+swapfile="/swapfile"
+
+# Define the line to add to /etc/fstab
+line_to_add="/swapfile none swap sw 0 0"
+
+# Check if the line already exists in /etc/fstab
+if grep -qFx "$line_to_add" /etc/fstab; then
+    echo "The line already exists in /etc/fstab. No changes made."
+else
+    # Add the line to /etc/fstab
+    echo "$line_to_add" | sudo tee -a /etc/fstab
+    echo "The line has been added to /etc/fstab."
+fi
 
 # Verify the swap is active
 sudo swapon --show
