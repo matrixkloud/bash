@@ -1,43 +1,31 @@
 #!/bin/bash
 
-# Function to check if a command is available
-command_exists() {
-  command -v "$1" >/dev/null 2>&1
-}
-
-# Check if bc is available, and if not, install it
-if ! command_exists bc; then
-  echo "bc is not installed. Installing it..."
-  sudo apt update
-  sudo apt install -y bc
-  echo "bc has been installed."
-fi
-
 # Define the swapfile name as a variable (you can change it here if needed)
 SWAPFILE="/swapfile"
 
 # Get the total RAM in kilobytes
 TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 
-# Calculate the expected swap size based on total RAM (2 times the RAM size)
-EXPECTED_SWAP_SIZE_GB=$(echo "scale=2; $TOTAL_RAM_KB / (1024*1024) * 2" | bc)
+# Calculate the expected swap size based on total RAM (2 times the RAM size), rounded to the nearest whole number of gigabytes
+EXPECTED_SWAP_SIZE_GB=$(( (TOTAL_RAM_KB / (1024*1024) * 2 + 1) / 2 ))
 
 # Check if the swap file already exists
 if [ -f "$SWAPFILE" ]; then
     # Get the current swap size in gigabytes
     CURRENT_SWAP_SIZE_GB=$(du -h "$SWAPFILE" | awk '{print $1}')
 
-    if [ "$CURRENT_SWAP_SIZE_GB" == "$EXPECTED_SWAP_SIZE_GB" ]; then
-        echo "Swap file already exists and is the correct size ($EXPECTED_SWAP_SIZE_GB GB)."
+    if [ "$CURRENT_SWAP_SIZE_GB" == "${EXPECTED_SWAP_SIZE_GB}G" ]; then
+        echo "Swap file already exists and is the correct size (${EXPECTED_SWAP_SIZE_GB} GB)."
         exit 1
     else
         # Print a message indicating that the existing swap file size doesn't match
-        echo "Existing swap file size ($CURRENT_SWAP_SIZE_GB GB) does not match the expected size ($EXPECTED_SWAP_SIZE_GB GB). Deleting the existing swap file."
+        echo "Existing swap file size ($CURRENT_SWAP_SIZE_GB) does not match the expected size (${EXPECTED_SWAP_SIZE_GB} GB). Deleting the existing swap file."
         sudo swapoff "$SWAPFILE"
         sudo rm "$SWAPFILE"
         echo "Existing swap file deleted."
     fi
 fi
+
 
 # Create a new swap file with the calculated size if it doesn't exist
 if [ ! -f "$SWAPFILE" ]; then
