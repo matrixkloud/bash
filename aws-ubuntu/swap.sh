@@ -11,10 +11,14 @@ EXPECTED_SWAP_SIZE_MB=$((TOTAL_RAM_KB * 2 / 1024))
 # Check if the swap file already exists
 if [ -f "$SWAPFILE" ]; then
     # Get the current swap size in megabytes
-    CURRENT_SWAP_SIZE_MB=$(du -m "$SWAPFILE" | cut -f1)
+    CURRENT_SWAP_SIZE_MB=$(du -m "$SWAPFILE" | awk '{print $1}')
 
-    if [ "$CURRENT_SWAP_SIZE_MB" -eq "$EXPECTED_SWAP_SIZE_MB" ]; then
-        echo "Swap file already exists and is the correct size ($EXPECTED_SWAP_SIZE_MB MB)."
+    # Calculate the acceptable range for the current swap size
+    LOWER_BOUND=$((EXPECTED_SWAP_SIZE_MB - 100))
+    UPPER_BOUND=$((EXPECTED_SWAP_SIZE_MB + 100))
+
+    if [ "$CURRENT_SWAP_SIZE_MB" -ge "$LOWER_BOUND" ] && [ "$CURRENT_SWAP_SIZE_MB" -le "$UPPER_BOUND" ]; then
+        echo "Swap file already exists and is within an acceptable size range ($LOWER_BOUND MB to $UPPER_BOUND MB)."
         exit 1
     else
         # Print a message indicating that the existing swap file size doesn't match
