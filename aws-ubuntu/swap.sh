@@ -1,5 +1,18 @@
 #!/bin/bash
 
+# Function to check if a command is available
+command_exists() {
+  command -v "$1" >/dev/null 2>&1
+}
+
+# Check if bc is available, and if not, install it
+if ! command_exists bc; then
+  echo "bc is not installed. Installing it..."
+  sudo apt update
+  sudo apt install -y bc
+  echo "bc has been installed."
+fi
+
 # Define the swapfile name as a variable (you can change it here if needed)
 SWAPFILE="/swapfile"
 
@@ -64,4 +77,5 @@ else
     echo "$line_to_add" | sudo tee -a /etc/fstab
     echo "The line has been added to /etc/fstab."
 fi
+
 echo "Done."
