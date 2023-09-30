@@ -19,42 +19,46 @@ if [ -f "$SWAPFILE" ]; then
         echo "Swap file already exists and is the correct size."
         exit 1
     else
-        # Delete the existing swap file
+        # Print a message indicating that the existing swap file size doesn't match
+        echo "Existing swap file size does not match the expected size. Deleting the existing swap file."
         sudo swapoff "$SWAPFILE"
         sudo rm "$SWAPFILE"
         echo "Existing swap file deleted."
     fi
 fi
 
-# Create a new swap file with the calculated size
-sudo fallocate -l ${SWAP_SIZE_MB}M "$SWAPFILE"
+# Create a new swap file with the calculated size if it doesn't exist
+if [ ! -f "$SWAPFILE" ]; then
+    sudo fallocate -l ${SWAP_SIZE_MB}M "$SWAPFILE"
 
-# Secure the swap file by restricting access
-sudo chmod 600 "$SWAPFILE"
+    # Secure the swap file by restricting access
+    sudo chmod 600 "$SWAPFILE"
 
-# Set up the swap area
-sudo mkswap "$SWAPFILE"
+    # Set up the swap area
+    sudo mkswap "$SWAPFILE"
 
-# Enable the swap file
-sudo swapon "$SWAPFILE"
+    # Enable the swap file
+    sudo swapon "$SWAPFILE"
 
-# Define the line to add to /etc/fstab
-line_to_add="$SWAPFILE none swap sw 0 0"
+    # Define the line to add to /etc/fstab
+    line_to_add="$SWAPFILE none swap sw 0 0"
 
-# Check if the line already exists in /etc/fstab
-if grep -qFx "$line_to_add" /etc/fstab; then
-    echo "The line already exists in /etc/fstab. No changes made."
+    # Check if the line already exists in /etc/fstab
+    if grep -qFx "$line_to_add" /etc/fstab; then
+        echo "The line already exists in /etc/fstab. No changes made."
+    else
+        # Add the line to /etc/fstab
+        echo "$line_to_add" | sudo tee -a /etc/fstab
+        echo "The line has been added to /etc/fstab."
+    fi
+
+    # Verify the swap is active
+    sudo swapon --show
+
+    # Display the amount of swap space created
+    free -h
+
+    echo "Swap memory of ${SWAP_SIZE_MB}MB has been added."
 else
-    # Add the line to /etc/fstab
-    echo "$line_to_add" | sudo tee -a /etc/fstab
-    echo "The line has been added to /etc/fstab."
+    echo "Swap file already exists. No changes made."
 fi
-
-# Verify the swap is active
-sudo swapon --show
-
-# Display the amount of swap space created
-free -h
-
-echo "Swap memory of ${SWAP_SIZE_MB}MB has been added."
-
