@@ -8,6 +8,21 @@ TOTAL_RAM_KB=$(grep MemTotal /proc/meminfo | awk '{print $2}')
 # Calculate the expected swap size based on total RAM (following the standard swap calculation)
 EXPECTED_SWAP_SIZE_MB=$((TOTAL_RAM_KB * 2 / 1024))
 
+# Function to retry swap off until successful
+retry_swapoff() {
+    while :
+    do
+        sudo swapoff "$SWAPFILE"
+        if [ $? -eq 0 ]; then
+            echo "Swapoff succeeded."
+            break  # Exit the loop if swap off was successful
+        else
+            echo "Swapoff failed. Retrying..."
+            sleep 1  # Optional: add a delay between retries
+        fi
+    done
+}
+
 # Check if the swap file already exists
 if [ -f "$SWAPFILE" ]; then
     # Get the current swap size in megabytes
@@ -23,7 +38,7 @@ if [ -f "$SWAPFILE" ]; then
     else
         # Print a message indicating that the existing swap file size doesn't match
         echo "Existing swap file size ($CURRENT_SWAP_SIZE_MB MB) does not match the expected size ($EXPECTED_SWAP_SIZE_MB MB). Deleting the existing swap file."
-        sudo swapoff "$SWAPFILE"
+        retry_swapoff
         sudo rm "$SWAPFILE"
         echo "Existing swap file deleted."
     fi
